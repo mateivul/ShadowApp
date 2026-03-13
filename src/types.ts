@@ -32,6 +32,21 @@ export type BuildingNormalized = {
   color?: string;
 };
 
+export type UiMode = "view" | "build" | "3d";
+
+export type GuideKind = "rectangle";
+
+export type GuideItem = {
+  id: string;
+  kind: GuideKind;
+  x: number;
+  y: number;
+  width: number;
+  depth: number;
+  angleDeg: number;
+  label?: string;
+};
+
 export type UnitSystem = "m" | "ft";
 
 export type LocationConfig = {
@@ -52,6 +67,7 @@ export type AppConfig = {
   location: LocationConfig;
   plot: PlotConfig;
   buildings: BuildingInput[];
+  guideItems?: GuideItem[];
 };
 
 export type SunPosition = {

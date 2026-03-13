@@ -24,6 +24,18 @@ function calculateAtmosphericRefraction(altitude: number): number {
 }
 
 export function sunPos(utcDate: Date, lat: number, lng: number): SunPosition {
+  if (lat < -90 || lat > 90) {
+    console.warn(`Invalid latitude: ${lat}. Clamping to [-90, 90].`);
+  }
+  if (lng < -180 || lng > 180) {
+    console.warn(`Invalid longitude: ${lng}. Normalizing to [-180, 180].`);
+  }
+
+  const latClamped = clamp(lat, -90, 90);
+  let lngNorm = lng;
+  while (lngNorm < -180) lngNorm += 360;
+  while (lngNorm > 180) lngNorm -= 360;
+
   const JD = utcDate.getTime() / 86400000 + 2440587.5;
   const T = (JD - 2451545) / 36525;
 
@@ -43,14 +55,16 @@ export function sunPos(utcDate: Date, lat: number, lng: number): SunPosition {
   const RA = Math.atan2(Math.cos(d2r(eps)) * Math.sin(d2r(lambda)), Math.cos(d2r(lambda)));
   const GST =
     (((280.46061837 + 360.98564736629 * (JD - 2451545) + T * T * (0.000387933 - T / 38710000)) % 360) + 360) % 360;
-  const LHA = d2r((((GST + lng - r2d(RA)) % 360) + 360) % 360);
+  const LHA = d2r((((GST + lngNorm - r2d(RA)) % 360) + 360) % 360);
 
-  const latR = d2r(lat);
+  const latR = d2r(latClamped);
   const sinAlt = Math.sin(latR) * Math.sin(dec) + Math.cos(latR) * Math.cos(dec) * Math.cos(LHA);
   let altitude = r2d(Math.asin(clamp(sinAlt, -1, 1)));
 
   const refraction = calculateAtmosphericRefraction(altitude);
   altitude += r2d(refraction);
+
+  altitude = clamp(altitude, -90, 90);
 
   const cosAz = (Math.sin(dec) - Math.sin(latR) * sinAlt) / (Math.cos(latR) * Math.cos(d2r(altitude - r2d(refraction))));
   let azimuth = r2d(Math.acos(clamp(cosAz, -1, 1)));
@@ -82,6 +96,13 @@ export function getSunriseSunset(
   lng: number,
   utcOffset: number,
 ): SunriseSunset {
+  if (month < 1 || month > 12) {
+    throw new Error(`Invalid month: ${month}. Must be 1-12.`);
+  }
+  if (day < 1 || day > 31) {
+    throw new Error(`Invalid day: ${day}. Must be 1-31.`);
+  }
+
   const cacheKey = `${month}-${day}-${lat}-${lng}-${utcOffset}`;
   if (srCache[cacheKey]) return srCache[cacheKey];
 

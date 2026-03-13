@@ -3,8 +3,10 @@ import { d2r } from "./utils";
 
 
 function convexHull(points: Point[]): Point[] {
+  if (points.length === 0) return [];
+  if (points.length <= 2) return points;
+
   const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
-  if (sorted.length <= 1) return sorted;
 
   const cross = (o: Point, a: Point, b: Point) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
   const lower: Point[] = [];
@@ -26,13 +28,17 @@ function convexHull(points: Point[]): Point[] {
 }
 
 export function getBuildingCorners(building: BuildingNormalized): Point[] {
+  if (building.w <= 0 || building.d <= 0) {
+    console.warn(`Invalid building dimensions: w=${building.w}, d=${building.d}. Using minimum 0.1.`);
+  }
+
   const cx = building.x + building.w / 2;
   const cy = building.y + building.d / 2;
-  const angle = d2r(building.angleDeg);
+  const angle = d2r(building.angleDeg || 0);
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const hw = building.w / 2;
-  const hd = building.d / 2;
+  const hw = Math.max(0.05, building.w / 2);
+  const hd = Math.max(0.05, building.d / 2);
   const localCorners: Point[] = [
     { x: -hw, y: -hd },
     { x: hw, y: -hd },
@@ -53,9 +59,15 @@ export function shadowPoly(
   maxLength = 120,
 ): Point[] | null {
   if (altitudeDeg <= 0) return null;
-  if (Math.abs(altitudeDeg) > 89) return null;
+  if (altitudeDeg > 89) {
+    return null;
+  }
 
-  const azimuth = d2r(azimuthDeg);
+  if (!building || building.roofHeight <= 0) {
+    return null;
+  }
+
+  const azimuth = d2r(azimuthDeg || 0);
   const length = Math.min(building.roofHeight / Math.tan(d2r(altitudeDeg)), maxLength);
 
   const vx = -Math.sin(azimuth) * length;
@@ -64,5 +76,6 @@ export function shadowPoly(
   const corners = getBuildingCorners(building);
   const translated = corners.map((p) => ({ x: p.x + vx, y: p.y + vy }));
 
-  return convexHull([...corners, ...translated]);
+  const hull = convexHull([...corners, ...translated]);
+  return hull.length >= 3 ? hull : null;
 }
