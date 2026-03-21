@@ -30,3 +30,6 @@ npm run build
 ## stack
 
 Vite + TypeScript, canvas 2D for the main view, Three.js for 3D, Leaflet for the map picker.
+
+![](ss/s1.png)
+![](ss/s2.png)
