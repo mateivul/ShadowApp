@@ -3,6 +3,7 @@ export type Point = {
   y: number;
 };
 
+
 export type BuildingInput = {
   kind?: "building" | "wall";
   id?: string;
@@ -18,6 +19,7 @@ export type BuildingInput = {
   height?: number;
   color?: string;
 };
+
 
 export type BuildingNormalized = {
   kind: "building" | "wall";
@@ -35,6 +37,7 @@ export type BuildingNormalized = {
 export type UiMode = "view" | "build" | "3d";
 
 export type GuideKind = "rectangle";
+
 
 export type GuideItem = {
   id: string;

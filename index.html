@@ -4,9 +4,352 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shadow App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@600;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
+    <header>
+      <span class="wordmark"><em>shadow</em>APP</span>
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="view">View</button>
+        <button class="mode-btn" data-mode="3d">3D</button>
+        <button class="mode-btn" data-mode="build">Build</button>
+      </div>
+      <span class="loc-tag" id="loc-tag"></span>
+      <div class="header-group">
+        <button class="cfg-btn" id="bldg-list-toggle">Buildings</button>
+        <button class="cfg-btn" id="btn-export-png">Save PNG</button>
+      </div>
+      <div class="header-sep"></div>
+      <div class="header-group">
+        <button class="cfg-btn cfg-btn-icon" id="btn-help" title="Keyboard shortcuts (?)">?</button>
+        <button class="cfg-btn" id="cfg-open">Settings</button>
+      </div>
+    </header>
+
+    <span class="mobile-loc-tag" id="loc-tag-mobile"></span>
+
+    <div class="build-toolbar" id="build-toolbar" hidden>
+      <div class="build-tools-wrap">
+        <span class="build-tools-label">Tool</span>
+        <div class="build-tools">
+          <button class="tool-btn" data-tool="select">Select</button>
+          <button class="tool-btn" data-tool="building">Building</button>
+          <button class="tool-btn" data-tool="wall">Wall</button>
+          <button class="tool-btn" data-tool="guide">Guide</button>
+          <button class="tool-btn" data-tool="ruler">Ruler</button>
+        </div>
+        <div class="build-tool-divider"></div>
+        <button class="tool-btn" id="snap-toggle">Snap ½</button>
+      </div>
+      <div class="build-separator"></div>
+      <div class="build-hint" id="build-hint">Click on the canvas to place a building.</div>
+      <div class="build-inline" id="build-inline" hidden>
+        <div class="ins-type-wrap">
+          <span class="ins-type" id="ins-type"></span>
+          <span class="ins-area" id="ins-area"></span>
+          <input class="build-name-input" id="ins-label" type="text" placeholder="Label" />
+        </div>
+        <div class="ins-fields">
+          <label class="ins-field-x">X<input id="ins-x" type="number" step="0.1" /></label>
+          <label class="ins-field-y">Y<input id="ins-y" type="number" step="0.1" /></label>
+          <label>W<input id="ins-w" type="number" step="0.1" /></label>
+          <label>D<input id="ins-d" type="number" step="0.1" /></label>
+          <label>Angle<input id="ins-angle" type="number" step="1" /></label>
+          <label>H<input id="ins-h" type="number" step="0.1" /></label>
+          <div class="color-swatches" id="color-swatches">
+            <button class="c-swatch" data-color="#eef4ff" style="background: #eef4ff"></button>
+            <button class="c-swatch" data-color="#f5ede0" style="background: #f5ede0"></button>
+            <button class="c-swatch" data-color="#e8cfc0" style="background: #e8cfc0"></button>
+            <button class="c-swatch" data-color="#d4e8d4" style="background: #d4e8d4"></button>
+            <button class="c-swatch" data-color="#c2d5e8" style="background: #c2d5e8"></button>
+            <button class="c-swatch" data-color="#e8e0d0" style="background: #e8e0d0"></button>
+            <button class="c-swatch" data-color="#e0e0e0" style="background: #e0e0e0"></button>
+            <button class="c-swatch" data-color="#f2dede" style="background: #f2dede"></button>
+          </div>
+          <label class="ins-color-wrap">Color<input type="color" id="ins-color" /></label>
+          <div class="ins-actions">
+            <button class="tool-btn inline-ok" id="ins-ok">OK</button>
+            <button class="danger-btn inline-danger" id="ins-delete">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <canvas id="c"></canvas>
+      <canvas id="c3d"></canvas>
+      <div class="bldg-info-card" id="bldg-info-card" hidden>
+        <div class="bic-name" id="bic-name"></div>
+        <div class="bic-dims" id="bic-dims"></div>
+      </div>
+
+      <div class="compass-3d" id="compass-3d" hidden>
+        <div class="compass-inner" id="compass-inner">
+          <span class="cn">N</span>
+          <span class="ce">E</span>
+          <span class="cs">S</span>
+          <span class="cw">W</span>
+        </div>
+      </div>
+      <div class="hint-3d" id="hint-3d">
+        <span>Drag</span> orbit &nbsp;·&nbsp; <span>Scroll</span> zoom &nbsp;·&nbsp; <span>WASD</span> walk
+        &nbsp;·&nbsp; <span>R</span> reset
+      </div>
+      <div class="hint-build" id="hint-build">
+        <span>Space+drag</span> pan &nbsp;·&nbsp; <span>↑↓←→</span> nudge selected
+      </div>
+      <div class="bldg-list-panel" id="bldg-list-panel" hidden>
+        <div class="bldg-list-head">
+          <span>Buildings</span>
+          <button class="x-btn" id="bldg-list-close">✕</button>
+        </div>
+        <div class="bldg-list-content" id="bldg-list-content"></div>
+      </div>
+    </main>
+
+    <div class="controls">
+      <div class="seasons">
+        <button class="s-card" data-month="12" data-day="21">
+          <svg class="s-arc" viewBox="0 0 52 26" fill="none">
+            <path d="M4 24 Q26 2 48 24" stroke="#f0a21d" stroke-width="1.5" fill="none" opacity="0.5" />
+          </svg>
+          <span class="s-name">Winter</span>
+          <span class="s-date">Dec 21</span>
+        </button>
+        <button class="s-card" data-month="3" data-day="21">
+          <svg class="s-arc" viewBox="0 0 52 26" fill="none">
+            <path d="M4 24 Q26 6 48 24" stroke="#f0a21d" stroke-width="1.5" fill="none" opacity="0.65" />
+          </svg>
+          <span class="s-name">Spring</span>
+          <span class="s-date">Mar 21</span>
+        </button>
+        <button class="s-card" data-month="6" data-day="21">
+          <svg class="s-arc" viewBox="0 0 52 26" fill="none">
+            <path d="M4 24 Q26 -2 48 24" stroke="#f0a21d" stroke-width="1.5" fill="none" opacity="0.9" />
+          </svg>
+          <span class="s-name">Summer</span>
+          <span class="s-date">Jun 21</span>
+        </button>
+        <button class="s-card" data-month="9" data-day="21">
+          <svg class="s-arc" viewBox="0 0 52 26" fill="none">
+            <path d="M4 24 Q26 6 48 24" stroke="#f0a21d" stroke-width="1.5" fill="none" opacity="0.65" />
+          </svg>
+          <span class="s-name">Fall</span>
+          <span class="s-date">Sep 21</span>
+        </button>
+        <input type="date" id="custom-date" class="custom-date-input" title="Pick any date" />
+      </div>
+
+      <div class="time-row">
+        <span class="time-lbl">Time</span>
+        <div class="scrubber">
+          <div class="s-track">
+            <div class="s-day" id="s-day"></div>
+            <div class="s-mark rise" id="s-rise">
+              <span class="s-mark-lbl rise" id="s-rise-lbl"></span>
+            </div>
+            <div class="s-mark set" id="s-set">
+              <span class="s-mark-lbl set" id="s-set-lbl"></span>
+            </div>
+          </div>
+          <input type="range" id="tslider" min="0" max="1439" step="1" value="720" />
+          <div class="s-thumb" id="s-thumb"></div>
+        </div>
+        <input type="time" id="ttime" value="12:00" />
+        <div class="time-shortcuts">
+          <button class="time-shortcut-btn" id="jump-rise">Rise</button>
+          <button class="time-shortcut-btn" id="jump-noon">Noon</button>
+          <button class="time-shortcut-btn" id="jump-set">Set</button>
+        </div>
+        <div class="speed-group">
+          <button class="speed-btn active" data-speed="1">1×</button>
+          <button class="speed-btn" data-speed="2">2×</button>
+          <button class="speed-btn" data-speed="4">4×</button>
+        </div>
+        <button class="time-play-btn" id="time-play" aria-pressed="false">▶</button>
+      </div>
+
+      <div class="info-bar">
+        <div class="i-item">
+          <span class="i-lbl">Az</span>
+          <span class="i-val" id="iaz">—</span>
+        </div>
+        <div class="i-item">
+          <span class="i-lbl">Alt</span>
+          <span class="i-val" id="ialt">—</span>
+        </div>
+        <div class="i-item i-item-rise">
+          <span class="i-lbl">Rise</span>
+          <span class="i-val" id="irise">—</span>
+        </div>
+        <div class="i-item i-item-set">
+          <span class="i-lbl">Set</span>
+          <span class="i-val" id="iset">—</span>
+        </div>
+        <div class="i-item i-coverage" id="i-coverage-item">
+          <span class="i-lbl">Cover</span>
+          <span class="i-val" id="icoverage">—</span>
+        </div>
+        <div class="spacer"></div>
+        <label class="trace-lbl" id="view-height-wrap">
+          View
+          <select id="view-height">
+            <option value="isometric" selected>Isometric</option>
+            <option value="topdown">Top-down</option>
+          </select>
+        </label>
+        <label class="trace-lbl">
+          <input type="checkbox" id="heatmap-toggle" />
+          Heatmap
+        </label>
+        <label class="trace-lbl">
+          <input type="checkbox" id="trace" />
+          Trace
+        </label>
+      </div>
+    </div>
+
+
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="cfg-panel" id="cfg-panel">
+      <div class="cfg-head">
+        <h2>Settings</h2>
+        <button class="x-btn" id="cfg-close">✕</button>
+      </div>
+      <div class="cfg-body">
+        <p class="cfg-hint">Configure your location, plot size, and buildings.</p>
+
+
+        <span class="cfg-section-title">Location</span>
+        <div class="loc-lookup-box">
+          <div class="cfg-loc-current" id="cfg-loc-current"></div>
+          <input type="text" id="cfg-loc-query" placeholder="Search city or address…" autocomplete="off" />
+          <div id="cfg-loc-suggestions" class="cfg-loc-suggestions">
+            <div id="cfg-loc-matches-group" class="cfg-loc-group" hidden>
+              <div class="cfg-loc-group-title">Results</div>
+            </div>
+            <div class="cfg-loc-recent-wrap">
+              <details>
+                <summary>Recent</summary>
+                <div id="cfg-loc-recent-list" class="cfg-loc-recent-list"></div>
+              </details>
+            </div>
+          </div>
+          <div id="cfg-loc-msg" class="cfg-loc-msg cfg-loc-msg-inline"></div>
+          <div class="cfg-loc-map-row">
+            <button class="mini-btn" id="cfg-loc-map-open">Pick on map…</button>
+          </div>
+        </div>
+
+
+        <span class="cfg-section-title">Units</span>
+        <div class="preset-box">
+          <div class="cfg-unit-switch">
+            <button class="cfg-unit-btn active" id="cfg-unit-m">m</button>
+            <button class="cfg-unit-btn" id="cfg-unit-ft">ft</button>
+          </div>
+        </div>
+
+
+        <span class="cfg-section-title">Plot</span>
+        <div class="preset-box">
+          <div class="plot-size-row">
+            <label class="plot-dim-label">W<input type="number" id="cfg-plot-w" min="1" max="500" step="1" /></label>
+            <label class="plot-dim-label">D<input type="number" id="cfg-plot-d" min="1" max="500" step="1" /></label>
+            <span class="plot-unit-tag" id="cfg-plot-unit">m</span>
+          </div>
+        </div>
+
+
+        <span class="cfg-section-title">Projects</span>
+        <div class="preset-box">
+          <div class="project-top-actions">
+            <button class="mini-btn" id="cfg-new">New</button>
+            <button class="mini-btn" id="cfg-duplicate">Duplicate</button>
+          </div>
+          <div class="project-list" id="cfg-project-list"></div>
+          <div class="preset-actions">
+            <button class="mini-btn" id="cfg-download">Download</button>
+            <button class="mini-btn" id="cfg-upload">Upload</button>
+            <input type="file" id="cfg-upload-input" accept=".json" hidden />
+          </div>
+          <button class="mini-btn cfg-share-btn" id="cfg-share">Share link</button>
+        </div>
+
+
+        <button class="mini-btn danger cfg-reset-btn" id="cfg-reset-all">Reset all data…</button>
+
+
+        <details class="cfg-advanced">
+          <summary>Advanced (JSON)</summary>
+          <textarea id="cfg" rows="12" spellcheck="false"></textarea>
+          <div class="err" id="cerr"></div>
+          <button class="apply-btn" id="applybtn">Apply</button>
+        </details>
+      </div>
+    </aside>
+
+
+    <div class="map-picker-modal" id="cfg-loc-map-modal" hidden>
+      <div class="map-picker-backdrop" id="cfg-loc-map-backdrop"></div>
+      <div class="map-picker-panel">
+        <div class="map-picker-head"><h3>Pick location</h3></div>
+        <div class="map-picker-frame">
+          <div class="cfg-loc-map" id="cfg-loc-map"></div>
+          <div class="cfg-loc-map-guide" id="cfg-loc-map-guide">
+            <span class="cfg-loc-map-guide-label" id="cfg-loc-map-guide-label">Center map here</span>
+          </div>
+          <div class="cfg-loc-map-pin">⊕</div>
+        </div>
+        <div class="cfg-loc-map-coords" id="cfg-loc-map-coords"></div>
+        <div class="cfg-loc-map-actions">
+          <button class="mini-btn" id="cfg-loc-map-cancel">Cancel</button>
+          <button class="apply-btn" id="cfg-loc-map-ok">Use this location</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="shortcuts-modal" id="shortcuts-modal" hidden>
+      <div class="shortcuts-backdrop" id="shortcuts-backdrop"></div>
+      <div class="shortcuts-panel">
+        <div class="shortcuts-head">
+          <span>Keyboard Shortcuts</span>
+          <button class="x-btn" id="shortcuts-close">✕</button>
+        </div>
+        <div class="shortcuts-body">
+          <div class="sc-section">
+            <div class="sc-title">General</div>
+            <div class="sc-row"><kbd>Ctrl Z</kbd><span>Undo</span></div>
+            <div class="sc-row"><kbd>Ctrl Y</kbd><span>Redo</span></div>
+            <div class="sc-row"><kbd>Ctrl D</kbd><span>Duplicate selected</span></div>
+            <div class="sc-row"><kbd>Del</kbd><span>Delete selected</span></div>
+            <div class="sc-row"><kbd>Esc</kbd><span>Cancel / deselect</span></div>
+            <div class="sc-row"><kbd>Space drag</kbd><span>Pan canvas (build mode)</span></div>
+            <div class="sc-row"><kbd>↑ ↓ ← →</kbd><span>Nudge selected (×10 with Shift)</span></div>
+            <div class="sc-row"><kbd>Shift click</kbd><span>Multi-select</span></div>
+            <div class="sc-row"><kbd>?</kbd><span>Toggle this panel</span></div>
+          </div>
+          <div class="sc-section">
+            <div class="sc-title">3D View</div>
+            <div class="sc-row"><kbd>W A S D</kbd><span>Walk</span></div>
+            <div class="sc-row"><kbd>Q E</kbd><span>Up / down</span></div>
+            <div class="sc-row"><kbd>R</kbd><span>Reset camera</span></div>
+            <div class="sc-row"><kbd>Drag</kbd><span>Orbit</span></div>
+            <div class="sc-row"><kbd>Scroll</kbd><span>Zoom</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
